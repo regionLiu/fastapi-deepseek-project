@@ -1,0 +1,15 @@
+# 添加以下内容到.gitignore文件
+# IDE配置
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Python编译缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+env/
+venv/
