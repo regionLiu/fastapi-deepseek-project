@@ -1,6 +1,5 @@
 import os
-
-from openai import OpenAI, api_key
+from openai import OpenAI
 import yaml
 from pathlib import Path
 import json
