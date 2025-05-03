@@ -1,4 +1,4 @@
-FROM alibaba-cloud-linux-3-registry.cn-hangzhou.cr.aliyuncs.com/alinux3/python
+FROM python:3.11-slim
 LABEL authors="liuzixin"
 WORKDIR /fastapi-deepseek-project
 COPY . /app
