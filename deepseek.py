@@ -13,8 +13,7 @@ def get_apikey():
     """
     try:
         config = get_config("deepseek")
-        config["deepseek"]["api_key"] = os.environ.get("DEEPSEEK_API_KEY")
-        return config["deepseek"]
+        return config
     except FileNotFoundError:
         print("apikey.yaml文件不存在")
         return RuntimeError("apikey.yaml文件不存在")
