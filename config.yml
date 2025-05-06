@@ -2,3 +2,6 @@ deepseek:
   api_key: "${DEEPSEEK_API_KEY}"
   base_url: https://api.deepseek.com
   model: deepseek-chat
+
+mongo:
+  mongo_uri: "mongodb+srv://liuzixin0418:lzx990418@deepseek.kfpqcch.mongodb.net/?retryWrites=true&w=majority&appName=deepseek"

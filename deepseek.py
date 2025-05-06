@@ -3,16 +3,18 @@ from openai import OpenAI
 import yaml
 from pathlib import Path
 import json
+
+from utils import get_config
+
+
 def get_apikey():
     """
     从yaml文件中读取apikey
     """
     try:
-        config_path = Path(__file__).parent/"config.yml"
-        with open(config_path, 'r') as file:
-            config = yaml.safe_load(file)
-            config["deepseek"]["api_key"] = os.environ.get("DEEPSEEK_API_KEY")
-            return config["deepseek"]
+        config = get_config("deepseek")
+        config["deepseek"]["api_key"] = os.environ.get("DEEPSEEK_API_KEY")
+        return config["deepseek"]
     except FileNotFoundError:
         print("apikey.yaml文件不存在")
         return RuntimeError("apikey.yaml文件不存在")
