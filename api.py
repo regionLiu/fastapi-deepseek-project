@@ -5,7 +5,7 @@ from schemas import DP, UserCreate, UserLogin,Token
 from database import db  # 修改导入
 import models
 import auth
-import utils
+from utils import Response, verify_token, StreamResponse
 from deepseek import request_deepseek, request_deepseek_stream
 from fastapi.responses import StreamingResponse
 router = APIRouter()
@@ -16,7 +16,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 async def register(user: UserCreate):
     existing_user = db.users.find_one({"username": user.username})
     if existing_user:
-        raise HTTPException(status_code=400, detail="用户名已存在")
+        return Response(code=400,content="用户名已存在")
     
     password = auth.get_password_hash(user.password)
     user_data = {
@@ -24,8 +24,8 @@ async def register(user: UserCreate):
         "password": password,
         "user_id": auth.generate_user_id()
     }
-    created_user = await auth.create_user(user_data)
-    return {"message": "用户创建成功"}
+    await auth.create_user(user_data)
+    return Response(code=200,content="注册成功")
 
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -37,25 +37,25 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth.create_access_token(data={"sub": user["username"],"user_id":user["user_id"]})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return Response(code=200,content={"access_token": access_token, "token_type": "bearer"})
 
 
-@router.post("/write")
-async def write(token: DP):
-    payload = utils.verify_token(token.access_token)
+@router.post("/ai_chat")
+async def write(user_data: DP):
+    payload = verify_token(user_data.access_token)
     user_id = payload.get("user_id")
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid token")
-    result_data = await request_deepseek("what")
-    return JSONResponse(content=result_data)
+    result_data = await request_deepseek(user_data.text,user_data.request_type)
+    return Response(content=result_data)
 
-@router.post("/write/stream")
+@router.post("/ai_chat/stream")
 async def write_stream(token: DP):
-    payload = utils.verify_token(token.access_token)
+    payload = verify_token(token.access_token)
     if not payload or not payload.get("user_id",""):
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    return StreamingResponse(
-        request_deepseek_stream("what"),  # 替换为实际的问题参数
-        media_type="text/event-stream"
+        return Response(code=401,content="Invalid token")
+
+    # 使用方式
+    return StreamResponse(
+        request_deepseek_stream(token.text, token.request_type)
     )

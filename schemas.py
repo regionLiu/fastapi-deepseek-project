@@ -11,7 +11,8 @@ class UserLogin(UserBase):
 
 class Token(BaseModel):
     access_token: str
-    token_type: str
+    token_type: str = "bearer"
 
 class DP(Token):
     text: str
+    request_type:str

@@ -1,10 +1,7 @@
-import os
 from openai import OpenAI
-import yaml
-from pathlib import Path
 import json
 
-from utils import get_config
+from config.config import get_config, get_prompt
 
 
 def get_apikey():
@@ -18,7 +15,7 @@ def get_apikey():
         print("apikey.yaml文件不存在")
         return RuntimeError("apikey.yaml文件不存在")
 
-async def request_deepseek(question: str):
+async def request_deepseek(question: str, request_type:str):
     """
     向deepseek发送请求
     """
@@ -26,41 +23,24 @@ async def request_deepseek(question: str):
         depepseek_config = get_apikey()
         api_key = depepseek_config["api_key"]
         base_url = depepseek_config["base_url"]
-        system_prompt = """
-                你是一个专业的文章撰写助手。你将根据用户的要求，输出一篇文章。
-                请根据用户的要求先写出提纲，再输出文章以及文本字数。同时将输出格式调整为一个JSON，分别是 outline、content、total_num
 
-                EXAMPLE INPUT: 
-                写一个100字的文章概括一下最近党的会议精神
+        whole_prompt = get_prompt(question,request_type)
 
-                EXAMPLE JSON OUTPUT:
-                {
-                    "content": "最近我国。。。。。。",
-                    "outline": "整篇文章大纲为。。。",
-                    "total_num": 100
-                }
-                """
-
-        user_prompt = f"以一名认真刻苦的公务员的视角，{question}"
-
-        messages = [{"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}]
+        messages = [{"role": "system", "content": whole_prompt["system_prompt"]},
+                    {"role": "user", "content": whole_prompt["user_prompt"]}]
 
         client = OpenAI(api_key=api_key, base_url=base_url)
 
         response = client.chat.completions.create(
             model="deepseek-chat",
-            messages=messages,
-            response_format={
-                'type': 'json_object'
-            }
+            messages=messages
         )
-        json_response = json.loads(response.choices[0].message.content)
-        return json_response
+        result = response.choices[0].message.content
+        return result
     except Exception as e:
         print(f"请求deepseek出错: {e}")
 
-async def request_deepseek_stream(question: str):
+async def request_deepseek_stream(question: str,request_type:str):
     """
     流式请求Deepseek接口
     """
@@ -68,23 +48,11 @@ async def request_deepseek_stream(question: str):
         deepseek_config = get_apikey()  # 修正变量名拼写错误
         api_key = deepseek_config["api_key"]
         base_url = deepseek_config["base_url"]
-        
-        system_prompt = """
-                你是一个专业的文章撰写助手。你将根据用户的要求，输出一篇文章。
-                请根据用户的要求先写出提纲，再输出文章以及文本字数。
 
-                EXAMPLE INPUT: 
-                写一个100字的文章概括一下最近党的会议精神
+        whole_prompt = get_prompt(question, request_type)
 
-                EXAMPLE JSON OUTPUT:
-                "这是一个。。。。"
-                """
-
-        user_prompt = f"以一名认真刻苦的公务员的视角，{question}"
-
-        messages = [{"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}]
-
+        messages = [{"role": "system", "content": whole_prompt["system_prompt"]},
+                    {"role": "user", "content": whole_prompt["user_prompt"]}]
 
         client = OpenAI(api_key=api_key, base_url=base_url)
 

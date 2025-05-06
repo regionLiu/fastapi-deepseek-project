@@ -1,0 +1,16 @@
+{
+    "system_prompt": {
+        "template": "请完成以下要求，完成后检查一下严谨但不要太具有ai味道",
+        "default_values": {
+            "example_input": "请说一下最近的有趣的事大概五十字",
+            "example_output": "正是春暖花开的时候。。。。"
+        }
+    },
+    "user_prompt": {
+        "template": "{user_character},\n{user_question}",
+        "default_values": {
+          "user_character": "你是一个非常有趣的人",
+          "user_question": "你最近在做什么"
+      }
+    }
+}
