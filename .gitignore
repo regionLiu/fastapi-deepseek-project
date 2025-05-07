@@ -4,7 +4,7 @@
 *.iml
 *.ipr
 *.iws
-
+.vscode
 # Python编译缓存
 __pycache__/
 *.py[cod]
