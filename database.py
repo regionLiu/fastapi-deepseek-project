@@ -1,7 +1,4 @@
 from pymongo import MongoClient
-import certifi
-import yaml
-import os
 from config.config import get_config
 # 读取配置文件
 
