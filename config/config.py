@@ -33,7 +33,7 @@ def process_env_placeholders(config:Any) ->Any:
                 env_var, default = env_var.split(":")[1]
             else:
                 default = None
-            return os.getenv(env_var, default)
+            return os.environ.get(env_var, default)
         return config
 
 
@@ -73,6 +73,6 @@ def get_prompt(user_question: str, request_type:str) -> Dict[str, str]:
                 "example_output": config[request_type]["example_output"],
                 "example_input": config[request_type]["example_input"],
             }
-        return PromptManager().get_full_prompt(system_kwargs)
+        return system_kwargs
     except Exception as e:
         raise Exception("ai提问类型错误:{}".format(e))

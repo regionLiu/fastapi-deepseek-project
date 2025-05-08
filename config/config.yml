@@ -1,7 +1,17 @@
 deepseek:
-  api_key: "${DEEPSEEK_API_KEY}"
+  api_key: ${DEEPSEEK_API_KEY}
   base_url: https://api.deepseek.com
   model: deepseek-chat
 
 mongo:
-  mongo_uri: "${MONGO_URI}"
+  mongo_uri: ${MONGO_URI}
+
+file_path:
+#local路径
+  base_file_path: "./user_file/" 
+# 线上路径
+  # base_file_path: "/user_file/"
+
+base_url:
+  base_url: "http://localhost:8000/" # local
+  # 线上

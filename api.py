@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from config.config import get_config
 from schemas import DP, UserCreate, UserLogin,Token
 from database import db  # 修改导入
 import models
@@ -8,6 +9,8 @@ import auth
 from utils import Response, verify_token, StreamResponse
 from deepseek import request_deepseek, request_deepseek_stream
 from fastapi.responses import StreamingResponse
+import json
+
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -41,12 +44,17 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 @router.post("/ai_chat")
-async def write(user_data: DP):
+async def write(user_data: DP = Depends(), file: UploadFile = File(None)):
+    # 验证 token
     payload = verify_token(user_data.access_token)
+    if not payload or not payload.get("user_id",""):
+        return Response(code=401,content="Invalid token")
     user_id = payload.get("user_id")
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid token")
-    result_data = await request_deepseek(user_data.text,user_data.request_type)
+
+    # 调用 deepseek
+    result_data = await request_deepseek(user_data.text, user_data.request_type, user_id, file)
     return Response(content=result_data)
 
 @router.post("/ai_chat/stream")
@@ -59,3 +67,15 @@ async def write_stream(token: DP):
     return StreamResponse(
         request_deepseek_stream(token.text, token.request_type)
     )
+
+@router.get("/download/{token}/{file_path}")
+async def download_file(token: str,file_path: str):
+    payload = verify_token(token)
+    if not payload or not payload.get("user_id",""):
+        return Response(code=401,content="Invalid token")
+    user_id = payload.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    base_file_path = get_config("file_path")["base_file_path"]
+    file_location = f"{base_file_path}{user_id}/{file_path}"  # 确保路径正确
+    return FileResponse(file_location, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=file_path)
