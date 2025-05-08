@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from config.config import get_config
-from schemas import DP, UserCreate, UserLogin,Token
+from crud_database import insert_request_document, update_token
+from schemas import DP, UserCreate, UserLogin, Token
 from database import db  # 修改导入
 import models
 import auth
@@ -16,12 +17,13 @@ router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 @router.post("/register")
 async def register(user: UserCreate):
     existing_user = db.users.find_one({"username": user.username})
     if existing_user:
-        return Response(code=400,content="用户名已存在")
-    
+        return Response(code=400, content="用户名已存在")
+
     password = auth.get_password_hash(user.password)
     user_data = {
         "username": user.username,
@@ -29,7 +31,8 @@ async def register(user: UserCreate):
         "user_id": auth.generate_user_id()
     }
     await auth.create_user(user_data)
-    return Response(code=200,content="注册成功")
+    return Response(code=200, content="注册成功")
+
 
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -40,36 +43,44 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = auth.create_access_token(data={"sub": user["username"],"user_id":user["user_id"]})
-    return Response(code=200,content={"access_token": access_token, "token_type": "bearer"})
+    access_token = auth.create_access_token(
+        data={"sub": user["username"], "user_id": user["user_id"]})
+    token_status = update_token(user["user_id"], access_token)
+    if token_status:
+        return Response(code=200, content={"access_token": access_token, "token_type": "bearer"})
+    else:
+        return Response(code=401, content="Failed to update token")
 
 
 @router.post("/ai_chat")
 async def write(user_data: DP = Depends(), file: UploadFile = File(None)):
     # 验证 token
     payload = verify_token(user_data.access_token)
-    if not payload or not payload.get("user_id",""):
-        return Response(code=401,content="Invalid token")
+    if not payload or not payload.get("user_id", ""):
+        return Response(code=401, content="Invalid token or token is expired")
     user_id = payload.get("user_id")
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     # 调用 deepseek
     result_data = await request_deepseek(user_data.text, user_data.request_type, user_id, file)
+    await insert_request_document(user_id=user_id, request_type=user_data.request_type, request_content=user_data.text, response_content=result_data)
     return Response(content=result_data)
+
 
 @router.post("/ai_chat/stream")
 async def write_stream(user_data: DP = Depends(), file: UploadFile = File(None)):
     payload = verify_token(user_data.access_token)
-    if not payload or not payload.get("user_id",""):
-            return Response(code=401,content="Invalid token")
+    if not payload or not payload.get("user_id", ""):
+        return Response(code=401, content="Invalid token")
     if user_data.request_type != "text":
-        return await write(user_data,file)
+        return await write(user_data, file)
     else:
-    # 使用方式
+        # 使用方式
         return StreamResponse(
             request_deepseek_stream(user_data.text, user_data.request_type)
         )
+
 
 @router.get("/download/user_file/{file_path:path}")
 async def download_file(file_path: str):

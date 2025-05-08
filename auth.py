@@ -11,7 +11,7 @@ from database import db  # 导入数据库连接
 # 安全配置
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -44,6 +44,7 @@ async def authenticate_user(username: str, password: str):
 # user_data = await authenticate_user("test_user", "password123")
 # username = user_data["username"]
 # user_id = user_data["user_id"]
+
 
 async def create_user(user_data: dict):
     try:

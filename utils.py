@@ -18,7 +18,8 @@ import subprocess
 import tempfile
 
 from auth import SECRET_KEY, ALGORITHM
-from config.config import PromptManager, get_config
+from config.config import PromptManager, get_config, get_prompt
+from crud_database import verify_database_token
 
 
 async def change_file_type(file: UploadFile, user_id: str, request_type: str) -> str:
@@ -42,6 +43,9 @@ async def change_file_type(file: UploadFile, user_id: str, request_type: str) ->
 
 def verify_token(token: str):
     try:
+        user = verify_database_token(token)
+        if not user:
+            return None
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError:
@@ -126,11 +130,11 @@ async def pre_convert_doc(file: UploadFile, request_type: str, user_id: str, pro
             input_path = spell_input_path(user_id)
             if csv_data:
                 prompt_dict["user_question"] = prompt_dict["user_question"] + \
-                    f"以下为转换过的csv数据只是为了让你理解表格的内容\n\n{csv_data}便于传输,原文件是excel,写一个python脚本只能使用pandas和openpyxl,目的是把excel文件进行更改并且代码中原文件路径是{input_path},输出路径是{result_path},生成的代码应该是可以直接执行的不要出现例如'Markdown 代码块标记'之类的东西。且执行成功后会在控制台输出<执行完成>,只需要给脚本其他文字都不要有"
+                    prompt_dict["1_1_excel"].format(
+                        csv_data, input_path, result_path)
         else:
             prompt_dict["user_question"] = prompt_dict["user_question"] + \
-                f"以上为表格的要求,请根据要求生成一个python脚本,写一个python脚本生成这个表格,只能使用pandas和openpyxl,生成的文件路径是{result_path},生成的代码应该是可以直接执行的不要出现例如'Markdown 代码块标记'之类的东西。且执行成功后会在控制台输出<执行完成>,只需要给脚本其他文字都不要有"
-
+                prompt_dict["0_1_excel"].format(result_path)
     whole_prompt = PromptManager().get_full_prompt(system_kwargs=prompt_dict)
     return whole_prompt, result_path
 
