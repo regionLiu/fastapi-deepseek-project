@@ -59,15 +59,17 @@ async def write(user_data: DP = Depends(), file: UploadFile = File(None)):
     return Response(content=result_data)
 
 @router.post("/ai_chat/stream")
-async def write_stream(token: DP):
-    payload = verify_token(token.access_token)
+async def write_stream(user_data: DP = Depends(), file: UploadFile = File(None)):
+    payload = verify_token(user_data.access_token)
     if not payload or not payload.get("user_id",""):
-        return Response(code=401,content="Invalid token")
-
+            return Response(code=401,content="Invalid token")
+    if user_data.request_type != "text":
+        return await write(user_data,file)
+    else:
     # 使用方式
-    return StreamResponse(
-        request_deepseek_stream(token.text, token.request_type)
-    )
+        return StreamResponse(
+            request_deepseek_stream(user_data.text, user_data.request_type)
+        )
 
 @router.get("/download/user_file/{file_path:path}")
 async def download_file(file_path: str):
