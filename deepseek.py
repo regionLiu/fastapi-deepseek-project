@@ -21,7 +21,7 @@ async def request_deepseek(question: str, request_type: str, user_id: str, file:
         prompt_dict = get_prompt(question, request_type)
 
         # 如果存在文件且请求类型为excel，则转换文件
-        whole_prompt = await pre_convert_doc(file, request_type,user_id, prompt_dict)
+        whole_prompt,result_path = await pre_convert_doc(file, request_type,user_id, prompt_dict)
 
         messages = [{"role": "system", "content": whole_prompt["system_prompt"]},
                     {"role": "user", "content": whole_prompt["user_prompt"]}]
@@ -35,7 +35,7 @@ async def request_deepseek(question: str, request_type: str, user_id: str, file:
         result = response.choices[0].message.content
 
         # 返回文件下载响应
-        return await post_convert_doc(result, request_type,user_id, file)
+        return await post_convert_doc(result, request_type,user_id,result_path)
     except Exception as e:
         print(f"请求deepseek出错: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

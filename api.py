@@ -10,6 +10,7 @@ from utils import Response, verify_token, StreamResponse
 from deepseek import request_deepseek, request_deepseek_stream
 from fastapi.responses import StreamingResponse
 import json
+import os
 
 router = APIRouter()
 
@@ -68,14 +69,10 @@ async def write_stream(token: DP):
         request_deepseek_stream(token.text, token.request_type)
     )
 
-@router.get("/download/{token}/{file_path}")
-async def download_file(token: str,file_path: str):
-    payload = verify_token(token)
-    if not payload or not payload.get("user_id",""):
-        return Response(code=401,content="Invalid token")
-    user_id = payload.get("user_id")
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
+@router.get("/download/user_file/{file_path:path}")
+async def download_file(file_path: str):
     base_file_path = get_config("file_path")["base_file_path"]
-    file_location = f"{base_file_path}{user_id}/{file_path}"  # 确保路径正确
+    file_location = f"{base_file_path}{file_path}"
+    if not os.path.exists(file_location):
+        raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_location, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=file_path)

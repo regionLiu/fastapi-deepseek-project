@@ -116,19 +116,23 @@ def StreamResponse(
 
 
 async def pre_convert_doc(file: UploadFile, request_type: str,user_id: str, prompt_dict: dict) -> str:
-    if file and request_type == "excel":
-        csv_data = await change_file_type(file,user_id, request_type)
+    if request_type == "excel":
+        result_path = spell_excel_path(user_id)
+        if file:
+            csv_data = await change_file_type(file,user_id, request_type)
         #把文件存到指定路径
-        input_path = spell_input_path(user_id)
-
-        if csv_data:
-            prompt_dict["user_question"] = prompt_dict["user_question"] + f"以下为转换过的csv数据只是为了让你理解表格的内容\n\n{csv_data}便于传输,原文件是excel,写一个python脚本只能使用pandas和openpyxl,目的是把excel文件进行更改并且代码中原文件路径是{input_path},输出路径是{spell_excel_path(user_id)},生成的代码应该是可以直接执行的不要出现例如'Markdown 代码块标记'之类的东西。且执行成功后会在控制台输出<执行完成>,只需要给脚本其他文字都不要有"
+            input_path = spell_input_path(user_id)
+            if csv_data:
+                prompt_dict["user_question"] = prompt_dict["user_question"] + f"以下为转换过的csv数据只是为了让你理解表格的内容\n\n{csv_data}便于传输,原文件是excel,写一个python脚本只能使用pandas和openpyxl,目的是把excel文件进行更改并且代码中原文件路径是{input_path},输出路径是{result_path},生成的代码应该是可以直接执行的不要出现例如'Markdown 代码块标记'之类的东西。且执行成功后会在控制台输出<执行完成>,只需要给脚本其他文字都不要有"
+        else:
+            prompt_dict["user_question"] = prompt_dict["user_question"] + f"以上为表格的要求,请根据要求生成一个python脚本,写一个python脚本生成这个表格,只能使用pandas和openpyxl,生成的文件路径是{result_path},生成的代码应该是可以直接执行的不要出现例如'Markdown 代码块标记'之类的东西。且执行成功后会在控制台输出<执行完成>,只需要给脚本其他文字都不要有"
+        
     whole_prompt = PromptManager().get_full_prompt(system_kwargs=prompt_dict)
-    return whole_prompt
+    return whole_prompt,result_path
 
 
-async def post_convert_doc(result: str, request_type: str, user_id: str, file: UploadFile) -> str:
-    if request_type == "excel" and file:
+async def post_convert_doc(result: str, request_type: str, user_id: str,result_path: str) -> str:
+    if request_type == "excel":
         # 移除 Markdown 代码块标记
         cleaned_result = result.replace("```python", "").replace("```", "")
 
@@ -144,6 +148,9 @@ async def post_convert_doc(result: str, request_type: str, user_id: str, file: U
 
         try:
             # 执行临时脚本
+            if not os.path.exists(get_config("file_path")["base_file_path"]+user_id):
+                os.makedirs(get_config("file_path")["base_file_path"]+user_id)
+
             process = subprocess.run(['python3', temp_script_path], capture_output=True, text=True)
             output = process.stdout
 
@@ -158,7 +165,7 @@ async def post_convert_doc(result: str, request_type: str, user_id: str, file: U
             os.remove(temp_script_path)
 
         # 返回文件下载链接
-        return spell_doc_url("/"+spell_excel_path(user_id).split('./')[-1])
+        return spell_doc_url("/"+result_path.split('./')[-1])
     return result
 
 def spell_input_path(user_id: str):
@@ -167,7 +174,7 @@ def spell_input_path(user_id: str):
 
 def spell_excel_path(user_id: str):
     base_file_path = get_config("file_path")["base_file_path"]
-    return f"{base_file_path}/{user_id}/result-{time.strftime('%Y%m%d%H%M%S')}.xlsx"
+    return f"{base_file_path}{user_id}/result-{time.strftime('%Y%m%d%H%M%S')}.xlsx"
 
 def spell_doc_url(file_path: str):
     base_url = get_config("base_url")["base_url"]

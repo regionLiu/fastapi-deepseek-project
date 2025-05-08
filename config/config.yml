@@ -13,5 +13,6 @@ file_path:
   # base_file_path: "/user_file/"
 
 base_url:
-  base_url: "http://localhost:8000/" # local
+  # local
+  base_url: "http://0.0.0.0:8000/api/v1/" 
   # 线上
