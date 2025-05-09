@@ -2,7 +2,21 @@ deepseek:
   api_key: ${DEEPSEEK_API_KEY}
   base_url: https://api.deepseek.com
   model: deepseek-chat
-
+  temperature: 
+    excel: "1.0"
+    mind_summarize: "1.5"
+    chat: "1.3"
+    word: "1.5"
+  stream:
+    excel: "false"
+    mind_summarize: "true"
+    word: "true"
+    chat: "true"
+  response_format:
+    excel: text
+    mind_summarize: text
+    word: text
+    chat: text
 mongo:
   mongo_uri: ${MONGO_URI}
 

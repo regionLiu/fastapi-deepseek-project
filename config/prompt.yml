@@ -9,3 +9,17 @@ mind_summarize:
   user_character: "你是一个努力工作的公务员，你要根据用户的要求，输出一篇文章。"
   example_input: "写一个200字的经济工作会议摘要"
   example_output: "最近我国经济下行。。。。。"
+  0_1_mind_summarize: 以上为文章和格式的要求,我需要生成的是markdown格式的文本,只需要给markdown内容其他的什么都不要。
+  1_1_mind_summarize: 以下是原文章的内容,这是一个markdown的内容,输出的内容也应该是按上面要求修改后的markdown内容,只需要给markdown内容其他什么都不要。
+
+chat:
+  user_character: "你是一个善于聊天的人，可以解决很多常见的问题"
+  example_input: "写一个200字的经济工作会议摘要"
+  example_output: "最近我国经济下行。。。。。"
+
+word:
+  user_character: "你是一个善于写文章的人，可以解决很多常见的问题"
+  example_input: "写一个200字的经济工作会议摘要"
+  example_output: "最近我国经济下行。。。。。"
+  0_1_word: 以上为文章和格式的要求,我需要生成的是markdown格式的文本,只需要给markdown内容其他的什么都不要。
+  1_1_word: 以下是原文章的内容,这是一个markdown的内容,输出的内容也应该是按上面要求修改后的markdown内容,只需要给markdown内容其他什么都不要。

@@ -1,3 +1,4 @@
+from typing import Union
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -53,7 +54,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 @router.post("/ai_chat")
-async def write(user_data: DP = Depends(), file: UploadFile = File(None)):
+async def write(user_data: DP = Depends(), file: Union[UploadFile, None] = File(None)):
     # 验证 token
     payload = verify_token(user_data.access_token)
     if not payload or not payload.get("user_id", ""):
@@ -69,16 +70,17 @@ async def write(user_data: DP = Depends(), file: UploadFile = File(None)):
 
 
 @router.post("/ai_chat/stream")
-async def write_stream(user_data: DP = Depends(), file: UploadFile = File(None)):
+async def write_stream(user_data: DP = Depends(), file: Union[UploadFile, None] = File(None)):
     payload = verify_token(user_data.access_token)
     if not payload or not payload.get("user_id", ""):
         return Response(code=401, content="Invalid token")
-    if user_data.request_type != "text":
+    if user_data.request_type in ["excel"] or file:
         return await write(user_data, file)
     else:
         # 使用方式
         return StreamResponse(
-            request_deepseek_stream(user_data.text, user_data.request_type)
+            request_deepseek_stream(
+                user_data.text, user_data.request_type, payload.get("user_id"), file)
         )
 
 

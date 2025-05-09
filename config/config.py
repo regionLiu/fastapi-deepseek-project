@@ -65,19 +65,52 @@ class PromptManager:
         }
 
 
-def get_prompt(user_question: str, request_type: str) -> Dict[str, str]:
+def get_prompt(config: dict, user_question: str, request_type: str) -> Dict[str, str]:
     try:
-        config_path = Path(__file__).parent/"prompt.yml"
-        with open(config_path, 'r') as file:
-            config = yaml.safe_load(file)
-            system_kwargs = {
-                "user_question": user_question,
-                "user_character": config[request_type]["user_character"],
-                "example_output": config[request_type]["example_output"],
-                "example_input": config[request_type]["example_input"],
-                "1_1_excel": config[request_type]["1_1_excel"],
-                "0_1_excel": config[request_type]["0_1_excel"]
-            }
+        system_kwargs = {
+            "user_question": user_question,
+            "user_character": config[request_type]["user_character"],
+            "example_output": config[request_type]["example_output"],
+            "example_input": config[request_type]["example_input"]
+        }
         return system_kwargs
     except Exception as e:
         raise Exception("ai提问类型错误:{}".format(e))
+
+
+def get_excel_prompt(user_question: str, request_type: str):
+    config_path = Path(__file__).parent/"prompt.yml"
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    system_prompt = get_prompt(config, user_question, request_type)
+    system_prompt["0_1_excel"] = config[request_type]["0_1_excel"]
+    system_prompt["1_1_excel"] = config[request_type]["1_1_excel"]
+    return system_prompt
+
+
+def get_chat_prompt(user_question: str, request_type: str):
+    config_path = Path(__file__).parent/"prompt.yml"
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    system_prompt = get_prompt(config, user_question, request_type)
+    return system_prompt
+
+
+def get_word_prompt(user_question: str, request_type: str):
+    config_path = Path(__file__).parent/"prompt.yml"
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    system_prompt = get_prompt(config, user_question, request_type)
+    system_prompt["0_1_word"] = config[request_type]["0_1_word"]
+    system_prompt["1_1_word"] = config[request_type]["1_1_word"]
+    return system_prompt
+
+
+def get_mind_summarize_prompt(user_question: str, request_type: str):
+    config_path = Path(__file__).parent/"prompt.yml"
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    system_prompt = get_prompt(config, user_question, request_type)
+    system_prompt["0_1_mind_summarize"] = config[request_type]["0_1_mind_summarize"]
+    system_prompt["1_1_mind_summarize"] = config[request_type]["1_1_mind_summarize"]
+    return system_prompt
