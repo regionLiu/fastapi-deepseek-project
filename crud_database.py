@@ -39,3 +39,22 @@ async def insert_request_document(user_id: str, request_type: str, request_conte
         return insert_data
     except Exception as e:
         raise e
+
+
+async def crud_userfile_list(user_id: str):
+    try:
+        user_data = []
+        user_file_list = db.request_documents.find({"user_id": user_id})
+        if user_file_list:
+            for _ in user_file_list:
+                user_data.append({
+                    "request_content": _.get("request_content"),
+                    "response_content": _.get("response_content"),
+                    "created_at": _.get("created_at"),
+                })
+        if user_data:
+            for _ in range(len(user_data)):
+                user_data[_]["id"] = _+1
+        return user_data
+    except Exception as e:
+        raise e

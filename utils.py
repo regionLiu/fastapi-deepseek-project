@@ -104,7 +104,7 @@ def Response(code: int = 200, content: Any = None):
             "data": content
         }
         return JSONResponse(retsult)
-    elif isinstance(content, dict):
+    elif isinstance(content, dict) or isinstance(content, list):
         retsult = {
             "code": code,
             "msg": "success",

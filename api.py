@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from config.config import get_config
-from crud_database import insert_request_document, update_token
+from crud_database import crud_userfile_list, insert_request_document, update_token
 from schemas import DP, UserCreate, UserLogin, Token
 from database import db  # 修改导入
 import models
@@ -91,3 +91,15 @@ async def download_file(file_path: str):
     if not os.path.exists(file_location):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_location, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=file_path)
+
+
+@router.get("user_file/list/{token}")
+async def get_user_file_list(token: str):
+    payload = verify_token(token)
+    if not payload or not payload.get("user_id", ""):
+        return Response(code=401, content="Invalid token")
+    user_id = payload.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user_file_list = await crud_userfile_list(user_id)
+    return Response(code=200, content=user_file_list)
