@@ -1,6 +1,6 @@
 from typing import Union
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Cookie
+from fastapi.responses import FileResponse, JSONResponse, Response as FastAPIResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from config.config import get_config
 from crud_database import crud_userfile_list, insert_request_document, update_token
@@ -54,38 +54,59 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 @router.post("/ai_chat")
-async def write(user_data: DP = Depends(), file: Union[UploadFile, None] = File(None)):
-    # 验证 token
-    payload = verify_token(user_data.access_token)
+async def write(
+    text: str = Form(...),
+    request_type: str = Form(...),
+    access_token: str = Form(...),
+    file: Union[UploadFile, None] = File(None)
+):
+    payload = verify_token(access_token)
     if not payload or not payload.get("user_id", ""):
         return Response(code=401, content="Invalid token or token is expired")
     user_id = payload.get("user_id")
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    # 调用 deepseek
-    result_data = await request_deepseek(user_data.text, user_data.request_type, user_id, file)
-    await insert_request_document(user_id=user_id, request_type=user_data.request_type, request_content=user_data.text, response_content=result_data)
-    return Response(content=result_data)
+    result_data = await request_deepseek(text, request_type, user_id, file)
+    await insert_request_document(user_id=user_id, request_type=request_type, request_content=text, response_content=result_data)
+    return FastAPIResponse(
+        content=Response(content=result_data).body,
+        status_code=200,
+        headers={"X-Stream": "false"},
+        media_type="application/json"
+    )
 
 
 @router.post("/ai_chat/stream")
-async def write_stream(user_data: DP = Depends(), file: Union[UploadFile, None] = File(None)):
-    payload = verify_token(user_data.access_token)
+async def write_stream(
+    text: str = Form(...),
+    request_type: str = Form(...),
+    access_token: str = Form(...),
+    file: Union[UploadFile, None] = File(None)
+):
+    payload = verify_token(access_token)
     if not payload or not payload.get("user_id", ""):
         return Response(code=401, content="Invalid token")
-    if user_data.request_type in ["excel"] or file:
-        return await write(user_data, file)
+    if request_type in ["excel"] or file:
+        resp = await write(text, request_type, access_token, file)
+        resp.headers["X-Stream"] = "false"
+        return resp
     else:
-        # 使用方式
-        return StreamResponse(
+        stream_resp = StreamResponse(
             request_deepseek_stream(
-                user_data.text, user_data.request_type, payload.get("user_id"), file)
+                text, request_type, payload.get("user_id"), file),
+            media_type="text/event-stream"
         )
+        stream_resp.headers["X-Stream"] = "true"
+        return stream_resp
 
 
 @router.get("/download/user_file/{file_path:path}")
-async def download_file(file_path: str):
+async def download_file(file_path: str, access_token: str = Cookie(None)):
+    # 校验token
+    payload = verify_token(access_token)
+    if not payload or not payload.get("user_id", ""):
+        raise HTTPException(status_code=401, detail="无效的token")
     base_file_path = get_config("file_path")["base_file_path"]
     file_location = f"{base_file_path}{file_path}"
     if not os.path.exists(file_location):

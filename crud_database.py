@@ -1,4 +1,5 @@
 from database import db
+from models import RequestDocument
 
 # User
 
@@ -29,11 +30,13 @@ def verify_database_token(token: str):
 # AI Request Document
 async def insert_request_document(user_id: str, request_type: str, request_content: str, response_content: str):
     try:
+
         request_document = {
             "user_id": user_id,
             "request_type": request_type,
             "request_content": request_content,
-            "response_content": response_content
+            "response_content": response_content,
+
         }
         insert_data = db.request_documents.insert_one(request_document)
         return insert_data

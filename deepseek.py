@@ -83,13 +83,12 @@ async def request_deepseek_stream(question: str, request_type: str, user_id: str
         )
 
         # 流式返回数据
-
         for chunk in response:
             content = chunk.choices[0].delta.content or ""
             if not content:
                 continue
             chunked_data += content
-            yield f"data: {json.dumps({'content': chunked_data,'doc_url':'','total_token':len(chunked_data)},ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'content': content, 'doc_url': '', 'total_token': len(chunked_data)}, ensure_ascii=False)}\n\n"
 
     except Exception as e:
         print(f"流式请求失败: {e}")
@@ -99,4 +98,4 @@ async def request_deepseek_stream(question: str, request_type: str, user_id: str
         if request_type in ["word", "mind_summarize"]:
             doc_url = post_convert_doc(
                 chunked_data, request_type, user_id, result_path)
-            yield f"data: {json.dumps({'content': chunked_data,'doc_url':doc_url,'total_token':len(chunked_data)},ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'content': '', 'doc_url': doc_url, 'total_token': len(chunked_data)}, ensure_ascii=False)}\n\n"

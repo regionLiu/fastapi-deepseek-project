@@ -103,7 +103,7 @@ def Response(code: int = 200, content: Any = None):
             "msg": "success",
             "data": content
         }
-        return JSONResponse(retsult)
+        return JSONResponse(status_code=code, content=retsult)
     elif isinstance(content, dict) or isinstance(content, list):
         retsult = {
             "code": code,
@@ -170,7 +170,7 @@ async def pre_convert_doc(file: UploadFile, request_type: str, user_id: str, pro
     result_path = spell_output_path(user_id)
     if request_type == "excel":
         result_path = result_path+".xlsx"
-        if file != File(None):
+        if file:
             csv_data, input_path = await change_file_type(file, user_id, request_type)
         # 把文件存到指定路径
             if csv_data:
