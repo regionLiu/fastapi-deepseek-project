@@ -1,5 +1,5 @@
 from typing import Union
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Cookie
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Cookie, Header
 from fastapi.responses import FileResponse, JSONResponse, Response as FastAPIResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from config.config import get_config
@@ -95,15 +95,18 @@ async def write_stream(
         stream_resp = StreamResponse(
             request_deepseek_stream(
                 text, request_type, payload.get("user_id"), file),
-            media_type="text/event-stream"
+            media_type="text/event-stream",
+            headers={"X-Stream": "true"}
         )
-        stream_resp.headers["X-Stream"] = "true"
         return stream_resp
 
 
 @router.get("/download/user_file/{file_path:path}")
-async def download_file(file_path: str, access_token: str = Cookie(None)):
+async def download_file(file_path: str, authorization: str = Header(None)):
     # 校验token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="无效的token")
+    access_token = authorization.split(" ", 1)[1]
     payload = verify_token(access_token)
     if not payload or not payload.get("user_id", ""):
         raise HTTPException(status_code=401, detail="无效的token")
@@ -114,7 +117,7 @@ async def download_file(file_path: str, access_token: str = Cookie(None)):
     return FileResponse(file_location, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=file_path)
 
 
-@router.get("user_file/list/{token}")
+@router.get("/user_file/list/{token}")
 async def get_user_file_list(token: str):
     payload = verify_token(token)
     if not payload or not payload.get("user_id", ""):

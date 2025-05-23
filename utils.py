@@ -117,7 +117,8 @@ def StreamResponse(
         content: Any,
         code: int = 200,
         msg: str = "success",
-        media_type: str = "text/event-stream"
+        media_type: str = "text/event-stream",
+        headers: dict = None
 ):
     async def format_stream():
         async for chunk in content:
@@ -160,10 +161,14 @@ def StreamResponse(
                     "data": chunk
                 }, ensure_ascii=False) + "\n\n"
 
-    return StreamingResponse(
+    resp = StreamingResponse(
         format_stream(),
         media_type=media_type
     )
+    if headers:
+        for k, v in headers.items():
+            resp.headers[k] = v
+    return resp
 
 
 async def pre_convert_doc(file: UploadFile, request_type: str, user_id: str, prompt_dict: dict) -> str:
